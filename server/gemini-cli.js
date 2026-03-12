@@ -134,7 +134,7 @@ async function spawnGemini(command, options = {}, ws) {
           
           // Check project-specific MCP servers
           if (!hasMcpServers && geminiConfig.geminiProjects) {
-            const currentProjectPath = process.cwd();
+            const currentProjectPath = workingDir;
             const projectConfig = geminiConfig.geminiProjects[currentProjectPath];
             if (projectConfig && projectConfig.mcpServers && Object.keys(projectConfig.mcpServers).length > 0) {
               hasMcpServers = true;
@@ -155,7 +155,7 @@ async function spawnGemini(command, options = {}, ws) {
             
             // Check if we have any MCP servers (global or project-specific)
             const hasGlobalServers = geminiConfig.mcpServers && Object.keys(geminiConfig.mcpServers).length > 0;
-            const currentProjectPath = process.cwd();
+            const currentProjectPath = workingDir;
             const projectConfig = geminiConfig.geminiProjects && geminiConfig.geminiProjects[currentProjectPath];
             const hasProjectServers = projectConfig && projectConfig.mcpServers && Object.keys(projectConfig.mcpServers).length > 0;
             
@@ -179,8 +179,8 @@ async function spawnGemini(command, options = {}, ws) {
     
     // Add model for all sessions (both new and resumed)
     // Debug - Model from options and resume session
-    const modelToUse = options.model || 'gemini-2.5-flash';
-    // Debug - Using model
+    const requestedModel = typeof options.model === 'string' ? options.model.trim() : '';
+    const modelToUse = requestedModel || 'gemini-2.5-flash';
     args.push('--model', modelToUse);
     
     // Add --yolo flag if skipPermissions is enabled
@@ -216,9 +216,6 @@ async function spawnGemini(command, options = {}, ws) {
     
     // Store sessionId on the process object for debugging
     geminiProcess.sessionId = processKey;
-    
-    // Close stdin to signal we're done sending input
-    geminiProcess.stdin.end();
     
     // Add timeout handler
     let hasReceivedOutput = false;

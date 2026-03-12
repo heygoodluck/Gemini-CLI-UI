@@ -43,6 +43,7 @@ function ToolsSettings({ isOpen, onClose }) {
   const [mcpToolsLoading, setMcpToolsLoading] = useState({});
   const [activeTab, setActiveTab] = useState('tools');
   const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
+  const [customModelInput, setCustomModelInput] = useState('');
   const [enableNotificationSound, setEnableNotificationSound] = useState(false);
 
   // Common tool patterns
@@ -64,10 +65,15 @@ function ToolsSettings({ isOpen, onClose }) {
     'WebSearch'
   ];
   
-  // Available Gemini models (tested and verified)
+  // Common stable Gemini model IDs for quick selection.
+  // Users can also enter any custom model ID to stay compatible with newly released models.
   const availableModels = [
     { value: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', description: 'Fast and efficient latest model (Recommended)' },
-    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', description: 'Most advanced model (Note: May have quota limits)' }
+    { value: 'gemini-2.5-flash-lite', label: 'Gemini 2.5 Flash-Lite', description: 'Lower-latency, lower-cost variant for lightweight tasks' },
+    { value: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro', description: 'Most capable model for complex reasoning and coding' },
+    { value: 'gemini-3.0-pro', label: 'Gemini 3.0 Pro', description: 'High-capability Gemini 3 series model' },
+    { value: 'gemini-3.1-pro', label: 'Gemini 3.1 Pro', description: 'Latest Gemini 3.x Pro series model' },
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', description: 'Fallback option for environments pinned to Gemini 2.0' }
   ];
 
   // MCP API functions
@@ -297,7 +303,11 @@ function ToolsSettings({ isOpen, onClose }) {
         setDisallowedTools(settings.disallowedTools || []);
         setSkipPermissions(settings.skipPermissions || false);
         setProjectSortOrder(settings.projectSortOrder || 'name');
-        setSelectedModel(settings.selectedModel || 'gemini-2.5-flash');
+        const savedModel = settings.selectedModel || 'gemini-2.5-flash';
+        setSelectedModel(savedModel);
+        if (savedModel && !availableModels.some((model) => model.value === savedModel)) {
+          setCustomModelInput(savedModel);
+        }
         setEnableNotificationSound(settings.enableNotificationSound || false);
       } else {
         // Set defaults
@@ -665,7 +675,13 @@ function ToolsSettings({ isOpen, onClose }) {
                   </label>
                   <select
                     value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
+                    onChange={(e) => {
+                      const nextModel = e.target.value;
+                      setSelectedModel(nextModel);
+                      if (availableModels.some((model) => model.value === nextModel)) {
+                        setCustomModelInput('');
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-cyan-500 focus:border-cyan-500"
                   >
                     {availableModels.map(model => (
@@ -675,7 +691,31 @@ function ToolsSettings({ isOpen, onClose }) {
                     ))}
                   </select>
                   <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {availableModels.find(m => m.value === selectedModel)?.description}
+                    {availableModels.find(m => m.value === selectedModel)?.description || 'Using a custom model ID'}
+                  </div>
+                  <div className="space-y-2 pt-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      Or enter custom model ID
+                    </label>
+                    <Input
+                      type="text"
+                      value={customModelInput}
+                      onChange={(e) => setCustomModelInput(e.target.value)}
+                      placeholder="e.g. gemini-2.5-pro"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        const normalized = customModelInput.trim();
+                        if (normalized) {
+                          setSelectedModel(normalized);
+                        }
+                      }}
+                      disabled={!customModelInput.trim()}
+                    >
+                      Apply Custom Model
+                    </Button>
                   </div>
                 </div>
               </div>

@@ -30,7 +30,7 @@ import { WebSocketServer } from 'ws';
 import http from 'http';
 import cors from 'cors';
 import { promises as fsPromises } from 'fs';
-import { spawn, execSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import os from 'os';
 import pty from 'node-pty';
 import fetch from 'node-fetch';
@@ -528,14 +528,12 @@ function handleShellConnection(ws) {
           // Get gemini command from environment or use default
           const geminiPath = process.env.GEMINI_PATH || 'gemini';
           
-          // First check if gemini CLI is available
-          try {
-            execSync(`which ${geminiPath}`, { stdio: 'ignore' });
-          } catch (error) {
-            // console.error('❌ Gemini CLI not found in PATH or GEMINI_PATH');
+          // Check if Gemini CLI is executable (supports custom absolute GEMINI_PATH too)
+          const geminiCheck = spawnSync(geminiPath, ['--version'], { stdio: 'ignore' });
+          if (geminiCheck.error || geminiCheck.status !== 0) {
             ws.send(JSON.stringify({
               type: 'output',
-              data: `\r\n\x1b[31mError: Gemini CLI not found. Please check:\x1b[0m\r\n\x1b[33m1. Install gemini globally: npm install -g @google/generative-ai-cli\x1b[0m\r\n\x1b[33m2. Or set GEMINI_PATH in .env file\x1b[0m\r\n`
+              data: `\r\n\x1b[31mError: Gemini CLI not found. Please check:\x1b[0m\r\n\x1b[33m1. Install gemini globally: npm install -g @google/gemini-cli\x1b[0m\r\n\x1b[33m2. Or set GEMINI_PATH in .env file\x1b[0m\r\n`
             }));
             return;
           }
